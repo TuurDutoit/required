@@ -1,0 +1,79 @@
+
+Directory structure
+
+This is the directory structure I'm planning to work with.
+You can, of course, use another one (requireJS gives you that freedom)
+
+/
+The root of the game code/assets
+└- Engine
+|  All the engine modules (core + external), each in their own directory
+|       └- clock
+|       └- events
+|       └- ...
+|
+└- scenes
+|  The different scenes in your game
+|       └- types.js -> registers object types with bulk-loader
+|       └- scene1.js -> the first scene
+|       └- scene2.js
+|       └- ...
+└- content
+|  Any content that is not a scene or an asset
+|        └- story.js
+|        └- ...
+└- i18n
+|  Translation files. Each language has its own .json file
+|     └- en.json
+|     └- nl.json
+|     └- ...
+|
+└- dependencies
+|  Libraries your code (in the code directory) depends on
+|             └- underscore/underscore.js
+|             └- ...
+└- code
+|  Your own code
+|     └- player.js
+|     └- ...
+|
+└─ load
+|  Scripts that load assets, scenes, content...
+|     └─ assets.js
+|     └─ scenes.js
+|     └─ i18n.js
+|     └─ ...
+|
+└- assets
+   All your assets, if you don't have an assets folder somewhere else on your server
+        └- music
+        |  The music used in your game
+        |      └- song1.mp3
+        |      └- song2.mp3
+        |      └- ...
+        └- sounds
+        |  All other sound used in your game, like footsteps, a falling stone...
+        |       └- footsteps.mp3
+        |       └- falling-stone.mp3
+        |       └- ...
+        |
+        └- voices
+        |  Anything that is spoken, sorted by language
+        |       └- en
+        |           └- John - hello.mp3
+        |           └- conversation1.mp3
+        |           └- ...
+        |       └- ...
+        |
+        └- sprites
+        |  All sprites/images used in the game
+        |  Non-animated sprites are bundled in a spritesheet
+        |  Animation frames come bundled in their own spritesheet
+        |        └- main-spritesheet.png
+        |        └- water.png
+        |        └- ...
+        |
+        └- video
+           All video material
+               └- intro.mp4
+               └- ...

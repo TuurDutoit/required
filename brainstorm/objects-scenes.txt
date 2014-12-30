@@ -1,0 +1,45 @@
+// scenes/types.js
+define(["engine/bulk-loader/index", "engine/objects/index", "engine/drawable/index", "engine/assets/index"],
+function(Loader, Objects, Drawable, Assets) {
+    
+    Loader.register(["stone", 0], Objects.extend({
+        draw: Drawable.forSprite(Assets.get("stone"), /*repeat:*/true),
+        w:35, h:35
+    }));
+    
+    Loader.register(["water", 1], Objects.extend({
+        draw: Drawable.forAnimation(Assets.get("water"), false),
+        w:40, h:40
+    }))
+    
+});
+
+
+// scenes/scene1.js
+define("engine/bulk-loader/index", function(Loader) {
+    
+    var scene = [
+        //type, x, y, w, h
+        [0,354,287,35,35],
+        [0,547,571],
+        [1,125,0,300,50],
+        {
+            type: "stone",
+            x:3455,
+            y:54,
+            w:463,
+            h:135
+        }
+        //...
+    ];
+    
+    //index/name, scene definition
+    Loader(1, scene);
+    
+});
+
+
+
+
+
+

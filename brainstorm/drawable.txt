@@ -1,0 +1,8 @@
+Objects have a 'draw' property, which is called on each frame, with a drawable context as first argument. This context is not the canvas context itself, but a 'proxy' to it. This way, objects can draw themselves within the space they are assigned and the proxy will place the image correctly on the canvas.
+
+To take away the hassle of drawing things to a canvas context, there is a 'drawable' module that makes draw() functions for a few common scenarios:
+
+1. forSprite(Sprite, repeat)
+   Makes draw functions given a sprite. repeat can be: "repeat" or true, to repeat in x and y direction; "x" or "y" to repeat in x or y direction only (and scale in the other), respectively; "scale" or false to scale the sprite in both directions.
+   
+2. forAnimation(Animation)
