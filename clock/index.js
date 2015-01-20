@@ -18,12 +18,12 @@ define(["../events/index", "../util/index"], function(Events, Util) {
     var Stopwatch = function(autoStart) {
         EventEmitter.call(this);
 
-        this.time = 0;
+        this._time = 0;
         this.startTime = null;
         this.pauseTime = null;
         this.status= "stopped";
 
-        if(autoStart !== false) {
+        if(autoStart) {
             this.start();
         }
 
@@ -37,33 +37,37 @@ define(["../events/index", "../util/index"], function(Events, Util) {
         if(this.status === "stopped") {
             this.time = 0;
         }
-        this.status = "running";
-        this.pauseTime = null;
-        this.startTime = exports.now();
-        this.emit("start");
+        
+        if(this.status !== "running") {
+            this.emit("start");
+            this.status = "running";
+            this.pauseTime = null;
+            this.startTime = exports.now();
+        }
 
         return this;
     }
 
     Stopwatch.prototype.pause = function() {
         if(this.status === "running") {
+            this.emit("pause");
             this.pauseTime = exports.now();
-            this.time += this.pauseTime - this.startTime;
+            this._time += this.pauseTime - this.startTime;
             this.startTime = null;
             this.status = "paused";
-            this.emit("pause");
         }
 
         return this;
     }
     
     Stopwatch.prototype.clear = function() {
-        // this.time is not cleared; that way, you can still read it after a stop()
-        this.starTime = 0;
-        this.startTime = 0;
+        // this._time is not cleared; that way, you can still read it after a stop()
+        this.emit("clear");
+        this.startTime = null;
         this.pauseTime = null;
         this.status = "stopped";
-        this.emit("clear");
+        
+        return this;
     }
 
     Stopwatch.prototype.stop = function(restart) {
@@ -83,11 +87,114 @@ define(["../events/index", "../util/index"], function(Events, Util) {
 
         return this;
     }
+    
+    Stopwatch.prototype.time = function() {
+        if(this.status === "running") {
+            return this._time + (exports.now() - this.startTime);
+        }
+        else {
+            return this._time;
+        }
+    }
 
 
 
     exports.stopwatch = exports.time = function(autoStart) {
         return new Stopwatch(autoStart);
+    }
+    
+    
+    
+    
+    
+    /**
+     * FrameStopwatch
+     *
+     * A stopwatch that works with the time of the frame
+     * This allows all animations etc. to run exactly simultaneously
+     */
+    
+    var FrameStopwatch = function(autoStart) {
+        EventEmitter.call(this);
+        
+        this._time = 0;
+        this.startTime = null;
+        this.pauseTime = null;
+        this.status = "stopped";
+        
+        if(autoStart) {
+            this.start();
+        }
+        
+        return this;
+    }
+    
+    Util.inherits(FrameStopwatch, EventEmitter);
+    
+    
+    FrameStopwatch.prototype.start = function() {
+        if(this.status !== "running") {
+            this.emit("start");
+            this.startTime = exports.frameTime;
+            this.pauseTime = null;
+            this.status = "running";
+        }
+        
+        return this;
+    }
+    
+    FrameStopwatch.prototype.pause = function() {
+        if(this.status === "running") {
+            this.emit("pause");
+            this.pauseTime = exports.frameTime;
+            this._time += this.pauseTime - this.startTime;
+            this.startTime = null;
+            this.status = "paused";
+        }
+        
+        return this;
+    }
+    
+    FrameStopwatch.prototype.clear = function() {
+        // this._time is not cleared; that way, you can still read it after a stop()
+        this.emit("clear");
+        this.startTime = null;
+        this.pauseTime = null;
+        this.status = "stopped";
+        
+        return this;
+    }
+    
+    FrameStopwatch.prototype.stop = function(restart) {
+        this.emit("stop");
+        this.clear();
+
+        if(restart) {
+            this.emit("restart");
+            this.start();
+        }
+
+        return this;
+    }
+    
+    FrameStopwatch.prototype.restart = function() {
+        this.stop(true);
+        
+        return this;
+    }
+    
+    FrameStopwatch.prototype.time = function() {
+        if(this.status === "running") {
+            return this._time + (exports.frameTime - this.startTime);
+        }
+        else {
+            return this._time;
+        }
+    }
+    
+    
+    exports.frameStopwatch = function(autoStart) {
+        return new FrameStopwatch(autoStart);
     }
 
 
@@ -103,16 +210,47 @@ define(["../events/index", "../util/index"], function(Events, Util) {
 
     var Timer = function(time, cb) {
         EventEmitter.call(this);
-
-        var self = this;
-        setTimeout(function() {
-            self.emit("end", time);
-        });
+        if(typeof time === "function") {
+            cb = time;
+            time = null;
+        }
+        
+        this.running = false;
+        
+        if(typeof time === "number") {
+            this.start(time);
+        }
 
         if(cb) {
             this.on("end", cb);
         }
 
+        return this;
+    }
+    
+    Timer.prototype.start = function(time) {
+        if(!this.running) {
+            this.running = true;
+
+            var self = this;
+            this._timeout = setTimeout(function() {
+                self.running = false;
+                self.emit("end", time);
+            });
+        }
+        
+        return this;
+    }
+    
+    Timer.prototype.clear = function(time) {
+        this.removeAllListeners();
+        clearTimeout(this._timeout);
+        this.running = false;
+        
+        if(typeof time === "number") {
+            this.start(time);
+        }
+        
         return this;
     }
 
@@ -146,6 +284,28 @@ define(["../events/index", "../util/index"], function(Events, Util) {
             return Date.now;
         }
     }();
+    
+    
+    
+    
+    /**
+     * Clock.frameTime
+     *
+     * At the beginning of every frame, the current time is saved
+     * With frameTime you can get that time (which will be the same during the whole frame)
+     * This is used by FrameStopwatch
+     */
+    
+    var frameTime = exports.now();
+    Events.on("loop:before", function() {
+        frameTime = exports.now();
+    });
+    
+    exports.frameTime = function() {
+        return frameTime;
+    }
+    
+    
 
 
     
