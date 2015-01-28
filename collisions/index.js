@@ -1,16 +1,10 @@
-define(["../pool/index", "./rbush", "./SAT"], function(Pool, RBush, SAT) {
-    //add(Collider, data) : Crash
-    //remove(Collider) : Crash
-    //removeData(data) : Crash
-    //load(Array<Collider>) : Crash
-    //check(Collider) : Array<SAT.Response>
-    //all : Array<Collider>
+define(["./rbush", "./SAT"], function(RBush, SAT) {
     
     
     var exports = {};
+
     
-    
-    var getAABBoxPolygon = function(collider) {
+    var getAABBPolygon = function(aabb, collider) {
         var points = collider.calcPoints;
         var len = points.length;
         var xMin = points[0].x;
@@ -32,76 +26,156 @@ define(["../pool/index", "./rbush", "./SAT"], function(Pool, RBush, SAT) {
                 yMax = point.y;
             }
         }
-        return new SAT.Box(collider.pos.clone().add(new SAT.Vector(xMin, yMin)), xMax - xMin, yMax - yMin);
+        
+        aabb[0] = xMin;
+        aabb[1] = yMin;
+        aabb[2] = xMax;
+        aabb[3] = yMax;
     }
     
-    var getAABBoxCircle = function(collider) {
+    var updateAABBCircle = function(aabb, collider) {
         var r = collider.r;
-        var corner = collider.pos.clone().sub(new SAT.Vector(r, r));
-        return new SAT.Box(corner, r*2, r*2)
+        var center = collider.pos;
+
+        aabb[0] = center.x - r;
+        aabb[1] = center.y - r;
+        aabb[2] = center.x + r;
+        aabb[3] = center.y + r;
     }
-    
-    var getAABBox = function(collider) {
-        if(collider instanceof SAT.Polygon) {
-            return getAABBoxPolygon(collider);
-        }
-        else {
-            return getAABBoxCircle(collider);
-        }
+
+    var getAABBPolygon = function(collider) {
+        return updateAABBPolygon([], collider);
     }
+
+    var getAABBCircle = function(collider) {
+        return updateAABBCircle([], collider);
+    }
+
+
+
     
-    
+
     exports.SAT = SAT;
     exports.RBush = RBush;
-    exports.items = [];
-    
-    
+    exports.rbush = null;
+
     exports.init = function(maxEntries) {
-        exports.rbush = new RBush(maxEntries, ["x1", "y1", "x2", "y2"]);
-        
+        exports.rbush = new RBush(maxEntries);
+
         return this;
     }
+
+    exports.test = function(collider) {
+        var possible = exports.rbush.search(collider.rbush);
+        var responses = [];
+
+        for(var i = 0, len = possible.length; i < len; i++) {
+            var other = possible[i];
+            switch(collider.type) {
+                case "polygon":
+                    switch(other.type) {
+                        case "polygon":
+                            responses.push(SAT.)
+                    }
+            }
+        }
+    }
+
+    exports.testPolygon = function(collider) {
+        var possible = exports.rbush.search(collider.rbush);
+        var responses = [];
+
+        for(var i = 0, len possible.length; i < len; i++) {
+            var other = possible[i];
+            var response = new SAT.Response();
+            switch(other.type) {
+                case "polygon":
+                    SAT.testPolygonPolygon(collider, other, response) ? responses.push(response);
+                    break;
+                case "circle":
+                    
+                    break;
+            }
+        }
+    }
     
-    exports.add = function(collider, data) {
-        var item = {
-            collider: collider,
-            data: data
-        };
-        
-        var aabb = getAABBox(collider);
-        item.x1 = aabb.pos.x;
-        item.y1 = aabb.pos.y;
-        item.x2 = aabb.pos.x + aabb.w;
-        item.y2 = aabb.pos.y + aabb.h;
-        
-        exports.rbush.insert(item);
-        exports.items.push(item);
-        
+    
+    
+    
+    
+    var Polygon = exports.Polygon = function(pos, points) {
+        this.type = "polygon";
+        this.sat = new SAT.Polygon(pos, points);
+        this.rbush = getAABBPolygon(this.sat);
+        exports.rbush.insert(this.rbush);
+
         return this;
     }
-    
-    exports.remove = function(collider) {
+
+    Polygon.prototype.update = function() {
+        this.sat.recalc();
+        exports.rbush.remove(this.rbush);
+        updateAABBPolygon(this.rbush, this.sat);
+        exports.rbush.insert(this.rbush);
+
+        return this;
+    }
+
+    Polygon.prototype.moveTo = function(x, y) {
+        this.sat.pos.x = x;
+        this.sat.pos.y = y;
+        return this.update();
+    }
+
+    Polygon.prototype.move = Polygon.prototype.moveBy = function(x, y) {
+        return this.moveTo(this.sat.pos.x + x, this.sat.pos.y + y);
+    }
+
+    Polygon.prototype.rotateTo = function(angle) {
+        this.sat.angle = angle;
+        return this.update();
+    }
+
+    Polygon.prototype.rotate = Polygon.rotateBy = function(angle) {
+        return this.rotateTo(this.sat.angle + angle);
+    }
+
+
+
+    var Circle = exports.Circle = function(pos, r) {
+        this.type = "circle";
+        this.sat = new SAT.Circle(pos, r);
+        this.rbush = getAABBCircle(this.sat);
+        exports.rbush.insert(this.rbush);
+
+        return this;
         
     }
-    
-    exports.removeData = function(data) {
-        
+
+    Circle.prototype.update = function() {
+        exports.rbush.remove(this.rbush);
+        updateAABBCircle(this.rbush, this.sat);
+        exports.rbush.insert(this.rbush);
+
+        return this;
     }
-    
-    exports.load = function(items) {
-        
+
+    Circle.prototype.moveTo = function(x, y) {
+        this.sat.pos.x = x;
+        this.sat.pos.y = y;
+        return this.update();
     }
+
+    Circle.prototype.move = Circle.prototype.moveBy = function(x, y) {
+        return this.moveTo(this.sat.pos.x + x, this.sat.pos.y + y);
+}
     
-    exports.check = function(collider) {
-        
-    }
+
     
-    
-    
-    
-    
-    
-    return Crash;
-    
+
+
+
+
+    return exports;
     
 });
