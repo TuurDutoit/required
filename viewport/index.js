@@ -1,4 +1,5 @@
 define(["../events/index"], function(Events) {
+    "use strict";
     
     
     var exports = {};
@@ -22,6 +23,11 @@ define(["../events/index"], function(Events) {
             scope.emit("resize", exports.width, exports.height);
         }
     });
+    
+    
+    
+    
+    return exports;
     
     
     

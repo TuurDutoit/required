@@ -1,4 +1,5 @@
 define(["../viewport/index", "../util/index"], function(Viewport, Util) {
+    "use strict";
     
     
     var exports = {};
@@ -349,6 +350,14 @@ define(["../viewport/index", "../util/index"], function(Viewport, Util) {
             return this;
         }
     }
+    
+    
+    
+    
+    
+    
+    
+    return exports;
     
     
 });

@@ -1,4 +1,7 @@
 define(["../clock/index"], function(Clock) {
+    "use strict";
+    
+    
     
     var createGetTime = function(useFrameTime) {
         return useFrameTime ? function() { return Clock.frameTime(); }  :  function() { return Clock.now(); };

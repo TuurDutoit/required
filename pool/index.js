@@ -1,13 +1,14 @@
 define(["../util/index", "./base-types.js"], function(Util, registerBaseTypes) {
+    "use strict";
     
     
     var exports = {};
     var Pool = {};
     
     
-    exports.register = function(type, ctor, clear) {
+    exports.register = function(type, create, clear) {
         Pool[type] = {
-            ctor: ctor,
+            create: create,
             clear: clear,
             cache: []
         };
@@ -22,7 +23,7 @@ define(["../util/index", "./base-types.js"], function(Util, registerBaseTypes) {
             return Type.cache.pop();
         }
         else {
-            return new Type.ctor();
+            return new Type.create();
         }
     }
     

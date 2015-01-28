@@ -22,7 +22,7 @@ define(function() {
     };
 
     
-    // Copies properties from objects to obj
+    // Copies properties from  one or more objects to obj
     // Taken from underscore.js
     // http://underscorejs.org
     // Object, Object,...
@@ -90,6 +90,8 @@ define(function() {
 
         return child;
     };
+    
+    
     
     
     return exports;

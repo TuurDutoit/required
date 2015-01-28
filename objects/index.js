@@ -1,4 +1,4 @@
-define(["../util/index"], function(Util, Stage) {
+define(["../util/index", "../stage/index"], function(Util, Stage) {
     "use strict";
     
     

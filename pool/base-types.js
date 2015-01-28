@@ -1,10 +1,13 @@
 define(function() {
+    "use strict";
     
     
     return function(Pool) {
         Pool.register("object", Object, function(obj) {
             for(key in obj) {
-                delete obj[key];
+                if(obj.hasOwnProperty(key)) {
+                    delete obj[key];
+                }
             }
         });
         

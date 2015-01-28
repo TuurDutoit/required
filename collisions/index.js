@@ -1,10 +1,12 @@
 define(["./rbush", "./SAT"], function(RBush, SAT) {
+    "use strict";
     
     
     var exports = {};
 
     
-    var getAABBPolygon = function(aabb, collider) {
+    var updateAABBPolygon = function(aabb, collider) {
+        var pos = collider.pos;
         var points = collider.calcPoints;
         var len = points.length;
         var xMin = points[0].x;
@@ -27,10 +29,10 @@ define(["./rbush", "./SAT"], function(RBush, SAT) {
             }
         }
         
-        aabb[0] = xMin;
-        aabb[1] = yMin;
-        aabb[2] = xMax;
-        aabb[3] = yMax;
+        aabb[0] = pos + xMin;
+        aabb[1] = pos + yMin;
+        aabb[2] = pos + xMax;
+        aabb[3] = pos + yMax;
     }
     
     var updateAABBCircle = function(aabb, collider) {
@@ -58,26 +60,22 @@ define(["./rbush", "./SAT"], function(RBush, SAT) {
     exports.SAT = SAT;
     exports.RBush = RBush;
     exports.rbush = null;
+    exports.V = exports.Vector = SAT.Vector;
 
+    
     exports.init = function(maxEntries) {
         exports.rbush = new RBush(maxEntries);
 
         return this;
     }
 
+    
     exports.test = function(collider) {
-        var possible = exports.rbush.search(collider.rbush);
-        var responses = [];
-
-        for(var i = 0, len = possible.length; i < len; i++) {
-            var other = possible[i];
-            switch(collider.type) {
-                case "polygon":
-                    switch(other.type) {
-                        case "polygon":
-                            responses.push(SAT.)
-                    }
-            }
+        switch(collider.type){
+            case "polygon":
+                return exports.testPolygon(collider);
+            case "circle":
+                return exports.testCircle(collider);
         }
     }
 
@@ -90,30 +88,98 @@ define(["./rbush", "./SAT"], function(RBush, SAT) {
             var response = new SAT.Response();
             switch(other.type) {
                 case "polygon":
-                    SAT.testPolygonPolygon(collider, other, response) ? responses.push(response);
+                    if(SAT.testPolygonPolygon(collider, other, response)) {
+                        responses.push(response);
+                    }
                     break;
                 case "circle":
-                    
+                    if(SAT.testPolygonCircle(collider, other, response)) {
+                        responses.push(response);
+                    }
                     break;
             }
         }
+                    
+        return responses;
+    }
+    
+    exports.testCircle = function(collider) {
+        var possible = exports.rbush.search(collider.rbush);
+        var responses = [];
+
+        for(var i = 0, len possible.length; i < len; i++) {
+            var other = possible[i];
+            var response = new SAT.Response();
+            switch(other.type) {
+                case "polygon":
+                    if(SAT.testCirclePolygon(collider, other, response)) {
+                        responses.push(response);
+                    }
+                    break;
+                case "circle":
+                    if(SAT.testCircleCircle(collider, other, response)) {
+                        responses.push(response);
+                    }
+                    break;
+            }
+        }
+                    
+        return responses;
+    }
+    
+    
+    exports.load = function(colliders) {
+        var items = [];
+        for(var i = 0, len = colliders.length; i < len; i++) {
+            items.push(colliders[i].rbush);
+        }
+        
+        exports.rbush.load(items);
+        
+        return this;
     }
     
     
     
     
     
-    var Polygon = exports.Polygon = function(pos, points) {
+    
+    
+    var Polygon = exports.Polygon = function(pos, points, insert) {
         this.type = "polygon";
         this.sat = new SAT.Polygon(pos, points);
         this.rbush = getAABBPolygon(this.sat);
-        exports.rbush.insert(this.rbush);
+        if(insert !== false) exports.rbush.insert(this.rbush);
 
         return this;
     }
+    
+    Polygon.prototype.setPoints = function(points) {
+        this.sat.setPoints(points);
+        return this.update();
+    }
+    
+    Polygon.prototype.setAngle = function(angle) {
+        this.sat.setAngle(angle);
+        return this.update();
+    }
+    
+    Polygon.prototype.setOffset = function(offset) {
+        this.sat.setOffset(offset);
+        return this.update();
+    }
+    
+    Polygon.prototype.rotate = function(angle) {
+        this.sat.rotate(angle);
+        return this.update();
+    }
+    
+    Polygon.prototype.translate = function(x, y) {
+        this.sat.translate(x, y);
+        return this.update();
+    }
 
     Polygon.prototype.update = function() {
-        this.sat.recalc();
         exports.rbush.remove(this.rbush);
         updateAABBPolygon(this.rbush, this.sat);
         exports.rbush.insert(this.rbush);
@@ -131,22 +197,13 @@ define(["./rbush", "./SAT"], function(RBush, SAT) {
         return this.moveTo(this.sat.pos.x + x, this.sat.pos.y + y);
     }
 
-    Polygon.prototype.rotateTo = function(angle) {
-        this.sat.angle = angle;
-        return this.update();
-    }
-
-    Polygon.prototype.rotate = Polygon.rotateBy = function(angle) {
-        return this.rotateTo(this.sat.angle + angle);
-    }
 
 
-
-    var Circle = exports.Circle = function(pos, r) {
+    var Circle = exports.Circle = function(pos, r, insert) {
         this.type = "circle";
         this.sat = new SAT.Circle(pos, r);
         this.rbush = getAABBCircle(this.sat);
-        exports.rbush.insert(this.rbush);
+        if(insert !== false) exports.rbush.insert(this.rbush);
 
         return this;
         
@@ -168,7 +225,7 @@ define(["./rbush", "./SAT"], function(RBush, SAT) {
 
     Circle.prototype.move = Circle.prototype.moveBy = function(x, y) {
         return this.moveTo(this.sat.pos.x + x, this.sat.pos.y + y);
-}
+    }
     
 
     

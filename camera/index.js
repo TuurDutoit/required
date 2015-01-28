@@ -1,4 +1,5 @@
 define(["../events/index", "../viewport/index"], function(Events, Viewport) {
+    "use strict";
     
     
     var exports = {};
@@ -165,6 +166,13 @@ define(["../events/index", "../viewport/index"], function(Events, Viewport) {
             Y = obj.y;
         }
     });
+    
+    
+    
+    
+    
+    
+    return exports;
     
     
 });
