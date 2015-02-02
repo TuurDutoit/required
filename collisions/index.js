@@ -2,7 +2,34 @@ define(["../events/index", "./rbush", "./SAT"], function(Events, RBush, SAT) {
     "use strict";
     
     
+    
+    
+    /*************
+     * Variables *
+     *************/
+    
+    
+    
     var exports = Events.scope("collisions");
+    
+    
+    var testStrings = {
+        polygon: {
+            polygon: "testPolygonPolygon",
+            circle: "testPolygonCircle",
+            point: "testPolygonPoint"
+        },
+        circle: {
+            polygon: "testCirclePolygon",
+            circle: "testCircleCircle",
+            point: "testCirclePoint"
+        },
+        point: {
+            polygon: "testPointPolygon",
+            circle: "testPointCircle",
+            point: "testPointPoint"
+        }
+    }
 
     
     var updateAABBPolygon = function(aabb, collider) {
@@ -45,16 +72,52 @@ define(["../events/index", "./rbush", "./SAT"], function(Events, RBush, SAT) {
         aabb.y2 = center.y + r;
     }
     
-    var getAABBPolygon = function(collider) {
-        return updateAABBPolygon({}, collider);
+    var updateAABBPoint = function(aabb, collider) {
+        aabb.x1 = aabb.x2 = collider.x;
+        aabb.y1 = aabb.y2 = collider.x;
     }
     
-    var getAABBCircle = function(collider) {
-        return updateAABBCircle({}, collider);
+    
+    
+    
+    
+    /*****************
+     * SAT Additions *
+     *****************/
+    
+    
+    SAT.testPolygonPoint = function(polygon, point, res) {
+        if(SAT.pointInPolygon(point, polygon)) {
+            res.a = polygon;
+            res.b = point;
+            res.aInB = false;
+            res.bInA = true;
+            res.overlap = null;
+        }
+        else {
+            return false;
+        }
+    }
+    
+    SAT.testCirclePoint = function(circle, point, res) {
+        
+    }
+    
+    SAT.testPointPolygon = function(point, polygon, res) {
+        
+    }
+    
+    SAT.testPointCircle = function(point, circle, res) {
+        
     }
 
 
-
+    
+    
+    
+    /*****************
+     * Basic Exports *
+     *****************/
     
 
     exports.SAT = SAT;
@@ -74,52 +137,22 @@ define(["../events/index", "./rbush", "./SAT"], function(Events, RBush, SAT) {
     
     
     
+    /******************
+     * Test Function *
+     ******************/
+    
     
     
     exports.test = function(collider) {
-        return collider.type === "polygon" ? exports.testPolygon(collider) : exports.testCircle(collider);
-    }
-    
-    exports.testPolygon = function(collider) {
         var possible = exports.rbush.search(collider);
+        var thisTestStrings = testStrings[collider.type];
         
         for(var i = 0, len = possible.length; i < len; i++) {
             var other = possible[i];
             var response = new SAT.Response();
             
-            switch(other.type) {
-                case "polygon":
-                    if(SAT.testPolygonPolygon(collider, other.collider, response)) {
-                        exports.emit("collision", collider, other, response);
-                    }
-                    break;
-                case "circle":
-                    if(SAT.testPolygonCircle(collider, other.collider, response)) {
-                        exports.emit("collision", collider, other, response);
-                    }
-            }
-        }
-        
-        return this;
-    }
-    
-    exports.testCircle = function(collider) {
-        var possible = exports.rbush.search(collider);
-        
-        for(var i = 0, len = possible.length; i < len; i++) {
-            var other = possible[i];
-            var response = new SAT.Response();
-            
-            switch(other.type) {
-                case "polygon":
-                    if(SAT.testCirclePolygon(collider, other.collider, response)) {
-                        exports.emit("collision", collider, other, response);
-                    }
-                    break;
-                case "circle":
-                    if(SAT.testCircleCircle(collider, other.collider, response)) {
-                        exports.emit("collision", collider, other, response);
-                    }
+            if( SAT[thisTestStrings[other.type]](collider.sat, other.sat, response) ) {
+                exports.emit("collision", collider, other, response);
             }
         }
         
@@ -131,6 +164,13 @@ define(["../events/index", "./rbush", "./SAT"], function(Events, RBush, SAT) {
     
     
     
+    
+    
+    
+    
+    /********************
+     * Collider Classes *
+     ********************/
     
     
     
@@ -225,6 +265,45 @@ define(["../events/index", "./rbush", "./SAT"], function(Events, RBush, SAT) {
     Circle.prototype.move = Circle.prototype.moveBy = function(x, y) {
         return this.moveTo(this.sat.pos.x + x, this.sat.pos.y + y);
     }
+    
+    
+    
+    
+    var Point = exports.Point = function(x, y, options) {
+        if(!opions) options = {};
+        
+        this.type = "point";
+        this.sat = new SAT.Vector(x, y);
+        this.data = options.data;
+        
+        updateAABBPoint(this, this.sat);
+        
+        if(options.insert !== false) exports.rbush.insert(this);
+        
+        return this;
+    }
+    
+    Point.prototype.update = function() {
+        exports.rbush.remove(this);
+        updateAABBPoint(this, this.sat);
+        exports.rbush.insert(this);
+        
+        return this;
+    }
+    
+    Point.prototype.moveTo = function(x, y) {
+        this.sat.x = x;
+        this.sat.y = y;
+        this.update();
+        
+        return this;
+    }
+    
+    Point.prototype.move = Point.prototype.moveBy = function(x, y) {
+        return this.moveTo(this.sat.x + x, this.sat.y + y);
+    }
+    
+    
     
     
     exports.Box = function(pos, w, h, options) {
