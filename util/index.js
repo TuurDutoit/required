@@ -92,6 +92,10 @@ define(function() {
     };
     
     
+    // Set 'extend()' on Object
+    Object.extend = extendProto;
+    
+    
     
     
     return exports;

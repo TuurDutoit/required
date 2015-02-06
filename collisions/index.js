@@ -156,46 +156,48 @@ define(["../events/index", "../util/index", "./rbush", "./SAT"], function(Events
     
     
     
-    var Collider = exports.Collider = function(type, sat, options) {
-        if(!options) options = {};
-        
-        this.type = type;
-        this.data = data;
-        this.sat = sat;
-        
-        updateAABB(this, sat);
-        
-        if(options.insert !== false) exports.rbush.insert(this);
-        
-        return this;
-    }
+    var Collider = exports.Collider = Object.extend({
+        constructor: function(type, sat, options) {
+            if(!options) options = {};
+
+            this.type = type;
+            this.data = data;
+            this.sat = sat;
+
+            updateAABB(this, sat);
+
+            if(options.insert !== false) exports.rbush.insert(this);
+
+            return this;
+        },
+
+        update: function() {
+            exports.rbush.remove(this);
+            updateAABB(this, this.sat);
+            exports.rbush.insert(this);
+
+            return this;
+        },
+
+        moveTo: function(x, y) {
+            this.sat.pos.x = x;
+            this.sat.pos.y = y;
+
+            return this.update();
+        },
+
+        moveBy: function(x, y) {
+            return this.moveTo(this.sat.pos.x + x, this.sat.pos.y + y);
+        },
+
+        setData: function(data) {
+            this.data = data;
+
+            return this;
+        }
+    });
     
-    Collider.prototype.update = function() {
-        exports.rbush.remove(this);
-        updateAABB(this, this.sat);
-        exports.rbush.insert(this);
-        
-        return this;
-    }
-    
-    Collider.prototype.moveTo = function(x, y) {
-        this.sat.pos.x = x;
-        this.sat.pos.y = y;
-        
-        return this.update();
-    }
-    
-    Collider.prototype.move = Collider.prototype.moveBy = function(x, y) {
-        return this.moveTo(this.sat.pos.x + x, this.sat.pos.y + y);
-    }
-    
-    Collider.prototype.setData = function(data) {
-        this.data = data;
-        
-        return this;
-    }
-    
-    Collider.extend = Util.extendProto;
+    Collider.prototype.move = Collider.prototype.moveBy;
     
     
     
