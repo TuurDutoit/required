@@ -1,1 +1,1 @@
-var SPECS = ["util/test/spec/UtilSpec"];
+var SPECS = ["util/test/UtilSpec"];

@@ -25,12 +25,14 @@ define(["../events/index", "../collisions/index"], function(Events, Collisions) 
             this.w = 1;
             this.h = 1;
             this.rotation = 0;
-            this.origin: new Collisions.Vector();
+            this.origin = new Collisions.Vector();
             
             this.children = [];
             this.parent = null;
             this.collider = null;
             this.solid = true;
+            
+            Collections.createCollection(this, this.children, {name: "child", plural: "children"});
             
             return this;
         },
@@ -52,52 +54,6 @@ define(["../events/index", "../collisions/index"], function(Events, Collisions) 
             var old = this.parent;
             this.parent = parent;
             this.emit("parent", parent, old);
-            
-            return this;
-        },
-        
-        addChild: function(child, index) {
-            this.children.splice(index, 0, child);
-            this.emit("children:add", child, index);
-            
-            return this;
-        },
-        
-        appendChild: function(child) {
-            this.children.push(child);
-            this.emit("children:add", child, this.children.length - 1);
-            
-            return this;
-        },
-        
-        prependChild: function(child) {
-            this.children.unshift(child);
-            this.emit("children:add", child, 0);
-            
-            return this;
-        },
-        
-        getChild: function(index) {
-            return this.children[index];
-        },
-        
-        getChildIndex: function(child) {
-            return this.children.indexOf(child);
-        },
-        
-        removeChildAt: function(index) {
-            var removed = this.splice(index, 1);
-            this.emit("children:remove", removed[0], index);
-            
-            return this;
-        },
-        
-        removeChild: function(child) {
-            var index = this.getChildIndex(child);
-            
-            if(index > -1) {
-                this.removeChildAt(index);
-            }
             
             return this;
         },
@@ -180,18 +136,6 @@ define(["../events/index", "../collisions/index"], function(Events, Collisions) 
             return this;
         }
     });
-    
-    var Node = exports.prototype;
-    
-    Node.move = Node.moveBy;
-    Node.rotate = Node.rotateBy;
-    Node.moveOrigin = Node.moveOriginBy;
-    Node.add = Node.addChild;
-    Node.append = Node.appendChild;
-    Node.prepend = Node.prependChild;
-    Node.remove = Node.removeChild;
-    Node.removeAt = Node.removeChildAt;
-    Node.get = Node.getChild;
     
     
     
